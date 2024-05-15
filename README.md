@@ -1,6 +1,6 @@
 # Parasys
 
-`parasys` is a command-line tool designed to monitor and display system performance metrics such as CPU usage and memory consumption in real-time. Built with Python and utilizing the `psutil` library, it offers a lightweight, efficient solution for system administrators, developers, or any user who needs to monitor their system's resources.
+`parasys` is a command-line tool designed to monitor and display system performance metrics such as CPU usage and memory consumption in realtime. It offers a lightweight, efficient solution for system administrators, developers, or any user who needs to monitor his or her system's resources.
 
 ## Features
 
