@@ -1,6 +1,17 @@
-import curses
+import sys
 import psutil
 import time
+try:
+    import curses
+except ImportError:
+    if sys.platform.startswith('win'):
+        try:
+            import windows_curses as curses # might as well support windows
+        except ImportError:
+            print("The curses module is required to run parasys. Please install with 'pip install windows-curses'.")
+            sys.exit(1)
+    else:
+        raise ImportError("Failed to import the curses module.")
 
 def draw_bar(stdscr, y, x, max_width, percentage, label):
     max_label_width = max_width - 20  # reserve some space for the bar itself
