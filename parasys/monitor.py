@@ -25,9 +25,9 @@ def draw_process_list(stdscr, start_y, start_x, processes, title, max_x, max_y, 
     stdscr.addstr(start_y, start_x, title[:max_x])
 
     if display_type == 'cpu':
-        headers = "  PID   Name            CPU%"
+        headers = "  PID Name               CPU%"
     elif display_type == 'memory':
-        headers = "  PID   Name            MEM%"
+        headers = "  PID Name               MEM%"
 
     stdscr.addstr(start_y + 1, start_x, headers[:max_x])
     max_processes = max_y - start_y - 3
