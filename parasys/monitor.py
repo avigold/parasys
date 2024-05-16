@@ -1,12 +1,13 @@
 import sys
 import psutil
-import time
+from collections import deque
+
 try:
     import curses
 except ImportError:
     if sys.platform.startswith('win'):
         try:
-            import windows_curses as curses  # might as well support windows
+            import windows_curses as curses
         except ImportError:
             print("The curses module is required to run parasys. Please install with 'pip install windows-curses'.")
             sys.exit(1)
@@ -21,6 +22,16 @@ def draw_bar(stdscr, y, x, max_width, percentage, label):
     bar_graph = f"{label} [{'#' * filled_length}{'.' * (bar_length - filled_length)}]"
     stdscr.addstr(y, x, bar_graph)
 
+def draw_line_graph(stdscr, y, x, data, label):
+    stdscr.addstr(y, x, label)
+    max_data = max(data) if data else 1
+    graph_height = 10
+    for i, value in enumerate(data):
+        bar_height = int((value / max_data) * graph_height)
+        for j in range(graph_height):
+            char = '#' if j < bar_height else ' '
+            stdscr.addstr(y + graph_height - j, x + i + len(label) + 1, char)
+
 def draw_process_list(stdscr, start_y, start_x, processes, title, max_x, max_y, display_type):
     stdscr.addstr(start_y, start_x, title[:max_x])
 
@@ -34,45 +45,47 @@ def draw_process_list(stdscr, start_y, start_x, processes, title, max_x, max_y, 
 
     for i, proc in enumerate(processes[:max_processes]):
         try:
-            cpu_percent = 0.0 if proc.info['cpu_percent'] is None else proc.info['cpu_percent']
-            memory_percent = 0.0 if proc.info['memory_percent'] is None else proc.info['memory_percent']
             if display_type == 'cpu':
-                num_cores = psutil.cpu_count; # It's possible to use 100% of a core--we want percent of all CPUs
-                proc_info = f"{proc.pid:>5} {proc.info['name'][:15]:<15} {cpu_percent / num_cores():>6.1f}%"
+                num_cores = psutil.cpu_count
+                cpu_percent = proc['cpu_percent']
+                proc_info = f"{proc['pid']:>5} {proc['name'][:15]:<15} {cpu_percent / num_cores():>6.1f}%"
             elif display_type == 'memory':
-                proc_info = f"{proc.pid:>5} {proc.info['name'][:15]:<15} {memory_percent:>6.1f}%"
+                memory_percent = proc['memory_percent']
+                proc_info = f"{proc['pid']:>5} {proc['name'][:15]:<15} {memory_percent:>6.1f}%"
             stdscr.addstr(start_y + i + 2, start_x, proc_info[:max_x])
-        except (psutil.NoSuchProcess, psutil.AccessDenied, curses.error) as e:
-            print("Error displaying process:", e)
+        except curses.error:
+            continue
 
 def get_top_processes_by_cpu():
-    processes = list(psutil.process_iter(['name', 'cpu_percent']))
+    processes = list(psutil.process_iter(['pid', 'name', 'cpu_percent']))
     valid_processes = []
     for p in processes:
         try:
             cpu_percent = p.cpu_percent(interval=None)
-            p.info = {'cpu_percent': cpu_percent, 'name': p.info['name']}
-            valid_processes.append(p)
+            valid_processes.append({'pid': p.pid, 'name': p.info['name'], 'cpu_percent': cpu_percent})
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return sorted(valid_processes, key=lambda p: p.info['cpu_percent'], reverse=True)[:20]
+    return sorted(valid_processes, key=lambda p: p['cpu_percent'], reverse=True)[:20]
 
 def get_top_processes_by_memory():
-    processes = psutil.process_iter(['name', 'cpu_percent', 'memory_percent'])
+    processes = psutil.process_iter(['pid', 'name', 'memory_percent'])
     valid_processes = []
     for p in processes:
         try:
-            p.info['memory_percent'] = 0.0 if p.info['memory_percent'] is None else p.info['memory_percent']
-            valid_processes.append(p)
+            memory_percent = p.memory_percent()
+            valid_processes.append({'pid': p.pid, 'name': p.info['name'], 'memory_percent': memory_percent})
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return sorted(valid_processes, key=lambda p: p.info['memory_percent'], reverse=True)[:20]
+    return sorted(valid_processes, key=lambda p: p['memory_percent'], reverse=True)[:20]
 
 def main(stdscr):
-    curses.curs_set(0)  # hide the cursor
-    curses.noecho()  # prevent key presses from being echoed
-    stdscr.nodelay(True)  # do not wait for input when calling getch
+    curses.curs_set(0) # hide cursor
+    curses.noecho()
+    stdscr.nodelay(True)
 
+    cpu_data = deque(maxlen=50)
+    memory_data = deque(maxlen=50)
+    
     try:
         while True:
             stdscr.erase()
@@ -80,27 +93,27 @@ def main(stdscr):
 
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
-            mem_amount = memory.total - memory.used
-            mem_percent = round((mem_amount / memory.total) * 100, 2)
+            mem_amount = memory.used
+            mem_percent = memory.percent
 
-            display_text = [
-                f"CPU Usage: {cpu_percent}%",
-                f"Memory Usage: {round(mem_amount / (1024 ** 3), 2)}GB ({mem_percent}%) of {round(memory.total / (1024 ** 3), 2)}GB",
-            ]
+            cpu_data.append(cpu_percent)
+            memory_data.append(mem_percent)
 
-            draw_bar(stdscr, 1, 0, max_x, cpu_percent, display_text[0])
-            draw_bar(stdscr, 3, 0, max_x, mem_percent, display_text[1])
+            draw_line_graph(stdscr, 1, 0, list(cpu_data), "CPU Usage: ", max_x - 1)
+            draw_line_graph(stdscr, 15, 0, list(memory_data), "Memory Usage: ", max_x - 1)
+
+            draw_bar(stdscr, 13, 0, max_x, cpu_percent, f"CPU Usage: {cpu_percent}%")
+            draw_bar(stdscr, 27, 0, max_x, mem_percent, f"Memory Usage: {round(mem_amount / (1024 ** 3), 2)}GB ({mem_percent}%) of {round(memory.total / (1024 ** 3), 2)}GB")
 
             top_cpu = get_top_processes_by_cpu()
             top_memory = get_top_processes_by_memory()
             half_width = max_x // 2
-            draw_process_list(stdscr, 5, 0, top_cpu, "Top CPU Processes", half_width, max_y, 'cpu')
-            draw_process_list(stdscr, 5, half_width, top_memory, "Top Memory Processes", half_width, max_y, 'memory')
+            draw_process_list(stdscr, 30, 0, top_cpu, "Top CPU Processes", half_width, max_y, 'cpu')
+            draw_process_list(stdscr, 30, half_width, top_memory, "Top Memory Processes", half_width, max_y, 'memory')
 
             stdscr.refresh()
-            time.sleep(1)
 
-            # check for the 'q' key to quit
+            # pressing q can quit
             k = stdscr.getch()
             if k == ord('q'):
                 break

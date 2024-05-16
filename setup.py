@@ -17,6 +17,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'psutil',
+        'asciimatics'
     ],
     extras_require=extras,
     entry_points={
