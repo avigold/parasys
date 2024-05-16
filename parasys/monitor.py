@@ -37,7 +37,8 @@ def draw_process_list(stdscr, start_y, start_x, processes, title, max_x, max_y, 
             cpu_percent = 0.0 if proc.info['cpu_percent'] is None else proc.info['cpu_percent']
             memory_percent = 0.0 if proc.info['memory_percent'] is None else proc.info['memory_percent']
             if display_type == 'cpu':
-                proc_info = f"{proc.pid:>5} {proc.info['name'][:15]:<15} {cpu_percent:>6.1f}%"
+                num_cores = psutil.cpu_count; # It's possible to use 100% of a core--we want percent of all CPUs
+                proc_info = f"{proc.pid:>5} {proc.info['name'][:15]:<15} {cpu_percent / num_cores():>6.1f}%"
             elif display_type == 'memory':
                 proc_info = f"{proc.pid:>5} {proc.info['name'][:15]:<15} {memory_percent:>6.1f}%"
             stdscr.addstr(start_y + i + 2, start_x, proc_info[:max_x])
