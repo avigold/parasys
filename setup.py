@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 
+
 extras = {
     'windows': ['windows-curses']  # required for curses support on Windows
 }
