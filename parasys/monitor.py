@@ -99,8 +99,8 @@ def main(stdscr):
             cpu_data.append(cpu_percent)
             memory_data.append(mem_percent)
 
-            draw_line_graph(stdscr, 1, 0, list(cpu_data), "CPU Usage: ", max_x - 1)
-            draw_line_graph(stdscr, 15, 0, list(memory_data), "Memory Usage: ", max_x - 1)
+            draw_line_graph(stdscr, 1, 0, list(cpu_data), "CPU Usage: ")
+            draw_line_graph(stdscr, 15, 0, list(memory_data), "Memory Usage: ")
 
             draw_bar(stdscr, 13, 0, max_x, cpu_percent, f"CPU Usage: {cpu_percent}%")
             draw_bar(stdscr, 27, 0, max_x, mem_percent, f"Memory Usage: {round(mem_amount / (1024 ** 3), 2)}GB ({mem_percent}%) of {round(memory.total / (1024 ** 3), 2)}GB")
