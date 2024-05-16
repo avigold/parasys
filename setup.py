@@ -1,8 +1,7 @@
 from setuptools import setup, find_packages
 
-# Conditionally add windows-specific dependencies
 extras = {
-    'windows': ['windows-curses']  # Required for curses support on Windows
+    'windows': ['windows-curses']  # required for curses support on Windows
 }
 
 setup(
