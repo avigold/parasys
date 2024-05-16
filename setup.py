@@ -7,7 +7,7 @@ extras = {
 
 setup(
     name='parasys',
-    version='0.1.0',
+    version='0.2.0',
     author='Avram Score',
     author_email='ascore@gmail.com',
     description='A platform-agnostic command-line tool for system monitoring.',

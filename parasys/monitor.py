@@ -22,11 +22,12 @@ def draw_bar(stdscr, y, x, max_width, percentage, label):
     bar_graph = f"{label} [{'#' * filled_length}{'.' * (bar_length - filled_length)}]"
     stdscr.addstr(y, x, bar_graph)
 
-def draw_line_graph(stdscr, y, x, data, label):
+def draw_line_graph(stdscr, y, x, data, label, width):
     stdscr.addstr(y, x, label)
     max_data = max(data) if data else 1
     graph_height = 10
-    for i, value in enumerate(data):
+    data_points = list(data)[-width:]
+    for i, value in enumerate(data_points):
         bar_height = int((value / max_data) * graph_height)
         for j in range(graph_height):
             char = '#' if j < bar_height else ' '
@@ -99,11 +100,11 @@ def main(stdscr):
             cpu_data.append(cpu_percent)
             memory_data.append(mem_percent)
 
-            draw_line_graph(stdscr, 1, 0, list(cpu_data), "CPU Usage: ")
-            draw_line_graph(stdscr, 15, 0, list(memory_data), "Memory Usage: ")
+            draw_line_graph(stdscr, 1, 0, list(cpu_data), "CPU Usage Over Time: ", max_x - 1)
+            draw_line_graph(stdscr, 15, 0, list(memory_data), "Memory Usage Over Time: ", max_x - 1)
 
-            draw_bar(stdscr, 13, 0, max_x, cpu_percent, f"CPU Usage: {cpu_percent}%")
-            draw_bar(stdscr, 27, 0, max_x, mem_percent, f"Memory Usage: {round(mem_amount / (1024 ** 3), 2)}GB ({mem_percent}%) of {round(memory.total / (1024 ** 3), 2)}GB")
+            draw_bar(stdscr, 13, 0, max_x, cpu_percent, f"Current CPU Usage: {cpu_percent}%")
+            draw_bar(stdscr, 27, 0, max_x, mem_percent, f"CurrentMemory Usage: {round(mem_amount / (1024 ** 3), 2)}GB ({mem_percent}%) of {round(memory.total / (1024 ** 3), 2)}GB")
 
             top_cpu = get_top_processes_by_cpu()
             top_memory = get_top_processes_by_memory()
